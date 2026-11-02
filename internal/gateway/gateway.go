@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"bytes"
+	"capstone/api-gateway/internal/accesslog"
 	"errors"
 	"io"
 	"net/http"
@@ -31,6 +32,7 @@ func New(cfg Config) *fiber.App {
 		}
 		return c.Status(code).JSON(fiber.Map{"error": fiber.Map{"message": msg}})
 	}})
+	app.Use(accesslog.New("api-gateway"))
 	app.Use(recover.New())
 	app.Use(func(c fiber.Ctx) error {
 		c.Set("X-Content-Type-Options", "nosniff")
