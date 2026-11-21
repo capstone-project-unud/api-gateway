@@ -61,7 +61,7 @@ func New(cfg Config) *fiber.App {
 			c.Set("Access-Control-Allow-Headers", "Content-Type")
 			return c.SendStatus(204)
 		}
-		upload := c.Path() == "/api/v1/capstone/files" && c.Method() == "POST" && strings.HasPrefix(c.Get("Content-Type"), "multipart/form-data;")
+		upload := (c.Path() == "/api/v1/capstone/files" || c.Path() == "/api/v1/capstone/signature") && c.Method() == "POST" && strings.HasPrefix(c.Get("Content-Type"), "multipart/form-data;")
 		if !upload && c.Method() != "GET" && c.Method() != "HEAD" && !strings.HasPrefix(c.Get("Content-Type"), "application/json") {
 			return fiber.NewError(415, "Gunakan Content-Type application/json.")
 		}
@@ -74,7 +74,7 @@ func New(cfg Config) *fiber.App {
 		return c.IP()
 	}
 	if cfg.Redis == nil {
-		app.Use(limiter.New(limiter.Config{Max: 180, Expiration: time.Minute, KeyGenerator: clientIP}))
+		app.Use(limiter.New(limiter.Config{Max: 600, Expiration: time.Minute, KeyGenerator: clientIP}))
 	} else {
 		app.Use(func(c fiber.Ctx) error {
 			if c.Path() == "/health" {
@@ -85,7 +85,7 @@ func New(cfg Config) *fiber.App {
 			if err != nil {
 				return fiber.NewError(503, "Pembatasan akses belum tersedia. Silakan coba kembali.")
 			}
-			if count > 180 {
+			if count > 600 {
 				c.Set("Retry-After", "60")
 				return fiber.NewError(429, "Terlalu banyak permintaan. Coba lagi sebentar.")
 			}

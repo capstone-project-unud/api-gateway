@@ -53,3 +53,25 @@ func TestGatewayBoundary(t *testing.T) {
 		})
 	}
 }
+
+func TestMultipartIsLimitedToUploadEndpoints(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(204) }))
+	defer upstream.Close()
+	app := New(Config{CapstoneURL: upstream.URL, AllowedOrigin: "http://localhost:3000"})
+	for _, test := range []struct {
+		path   string
+		status int
+	}{{"/api/v1/capstone/signature", 204}, {"/api/v1/capstone/files", 204}, {"/api/v1/capstone/proposals", 415}} {
+		req := httptest.NewRequest("POST", test.path, strings.NewReader("--boundary--"))
+		req.Header.Set("Content-Type", "multipart/form-data; boundary=boundary")
+		req.Header.Set("Origin", "http://localhost:3000")
+		res, e := app.Test(req)
+		if e != nil {
+			t.Fatal(e)
+		}
+		res.Body.Close()
+		if res.StatusCode != test.status {
+			t.Fatalf("%s: status %d", test.path, res.StatusCode)
+		}
+	}
+}
