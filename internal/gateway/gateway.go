@@ -26,7 +26,8 @@ type Config struct {
 }
 
 func New(cfg Config) *fiber.App {
-	client := &http.Client{Timeout: 60 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	transport := &http.Transport{MaxIdleConns: 100, MaxIdleConnsPerHost: 32, IdleConnTimeout: 90 * time.Second}
+	client := &http.Client{Timeout: 60 * time.Second, Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
 	app := fiber.New(fiber.Config{AppName: "capstone-gateway", BodyLimit: 11 * 1024 * 1024, ReadTimeout: 30 * time.Second, WriteTimeout: 65 * time.Second, ErrorHandler: func(c fiber.Ctx, e error) error {
 		code := 500
 		msg := "Gateway mengalami gangguan."
